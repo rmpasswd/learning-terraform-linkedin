@@ -1,3 +1,7 @@
+provider "aws" {
+  region = "us-east-2"
+}
+
 data "aws_ami" "app_ami" {
   most_recent = true
 
