@@ -15,7 +15,7 @@ data "aws_ami" "app_ami" {
   owners = ["979382823631"] # Bitnami
 }
 
-resource "aws_instance" "web" {
+resource "aws_instance" "blog" {
   ami           = data.aws_ami.app_ami.id
   instance_type = "t3.nano"
 
@@ -23,3 +23,78 @@ resource "aws_instance" "web" {
     Name = "HelloWorld"
   }
 }
+
+
+module "blog_vpc" {
+
+  source = "terraform-aws-modules/vpc/"
+  name   = "blog_dev"
+  cidr   = "10.0.0.0/16"
+
+  public_subnets  = ["10.0.1.0/24", "10.0.2.0/24"]
+  azs             = ["us-east-2a",  "us-east-2b"]
+
+  tags ={
+    Terraform = "true" #  Metadata for AWS
+    }
+}
+
+module "blog_sg"  {
+  source      = "terraform-aws-module/security-group/aws"
+  version     =  "4.13.0"
+
+  vpc_id          =        module.blog_vpc.vpc_id
+  name            =        "blog_sg"
+
+  ingress-rules   =        ["http-80-tcp", "https-443-tcp"]
+  ingress-cidr-block  =    ["0.0.0.0/0"]
+  egress_rules = ["all-all"]
+  egress_cidr_blocks = ["0.0.0.0/0"]
+
+}
+
+#  --------------------------------------
+
+
+
+module "myalb" {
+  source = "terraform-aws-modules/alb/aws"
+
+  name    = "myblog-alb"
+  vpc_id  = module.blog_vpc.vpc_id
+  subnets = module.blog_vpc.public_subnets
+
+  security_groups = [module.blog_sg.security_group_id]  # security_group_id needs to be defined, the module's author has defined it..
+
+
+  listeners = {
+    myblog-http = {
+      port     = 80
+      protocol = "HTTP"
+      forward  =   {
+        target_group_arn  = aws_lb_target_group.blog.arn
+      }
+
+      tags = {
+        Environment = "Development"
+      }
+    }
+  }
+
+}
+
+resource "aws_lb_target_group" "myblog-target-group" {
+  name        = "myblog-target-group"
+  port        = 80
+  protocol    = "HTTP"
+  # target-type defaults to instance type
+  vpc_id      = module.blog_vpc.vpc_id
+}
+
+resource "aws_lb_target_group_attachment" "myblog-glue" {
+  target_group_arn    = aws_lb_target_group.myblog-target-group.arn
+  target_id           = aws_instance.blog.id
+  port                = 80
+}
+
+
