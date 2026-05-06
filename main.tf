@@ -27,7 +27,7 @@ resource "aws_instance" "blog" {
 
 module "blog_vpc" {
 
-  source = "terraform-aws-modules/vpc/"
+  source = "terraform-aws-modules/vpc/aws"
   name   = "blog_dev"
   cidr   = "10.0.0.0/16"
 
