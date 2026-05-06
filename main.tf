@@ -18,7 +18,7 @@ data "aws_ami" "app_ami" {
 resource "aws_instance" "blog" {
   ami           = data.aws_ami.app_ami.id
   instance_type = "t3.nano"
-
+  subnet_id = module.blog_vpc.private_subnets[0]
   tags = {
     Name = "HelloWorld"
   }
@@ -32,6 +32,7 @@ module "blog_vpc" {
   cidr   = "10.0.0.0/16"
 
   public_subnets  = ["10.0.1.0/24", "10.0.2.0/24"]
+  private_subnets  = ["10.0.3.0/24"]
   azs             = ["us-east-2a",  "us-east-2b"]
 
   tags ={
@@ -91,7 +92,7 @@ resource "aws_lb_target_group" "myblog" {
   vpc_id      = module.blog_vpc.vpc_id
 }
 
-resource "aws_lb_target_group_attachment" "myblog-glue" {
+resource "aws_lb_target_group_attachment" "myblog_glue" {
   target_group_arn    = aws_lb_target_group.myblog.arn
   target_id           = aws_instance.blog.id
   port                = 80
