@@ -72,7 +72,7 @@ module "myalb" {
       port     = 80
       protocol = "HTTP"
       forward  =   {
-        target_group_arn  = aws_lb_target_group.blog.arn
+        target_group_arn  = aws_lb_target_group.myblog.arn
       }
 
       tags = {
@@ -83,7 +83,7 @@ module "myalb" {
 
 }
 
-resource "aws_lb_target_group" "myblog-target-group" {
+resource "aws_lb_target_group" "myblog" {
   name        = "myblog-target-group"
   port        = 80
   protocol    = "HTTP"
@@ -92,7 +92,7 @@ resource "aws_lb_target_group" "myblog-target-group" {
 }
 
 resource "aws_lb_target_group_attachment" "myblog-glue" {
-  target_group_arn    = aws_lb_target_group.myblog-target-group.arn
+  target_group_arn    = aws_lb_target_group.myblog.arn
   target_id           = aws_instance.blog.id
   port                = 80
 }
